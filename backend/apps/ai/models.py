@@ -69,3 +69,180 @@ class AIUsageLog(TimeStampedModel):
             models.Index(fields=['user', 'created_at']),
             models.Index(fields=['project', 'created_at']),
         ]
+
+
+
+from django.db import models
+from django.conf import settings
+from django.core.validators import FileExtensionValidator
+
+
+class Report(models.Model):
+    FORMAT_CHOICES = (
+        ('pdf', 'PDF'),
+        ('excel', 'Excel'),
+        ('csv', 'CSV'),
+    )
+
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    )
+
+    name = models.CharField(
+        max_length=255
+    )
+
+    format = models.CharField(
+        max_length=10,
+        choices=FORMAT_CHOICES
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending'
+    )
+
+    config = models.JSONField(
+        default=dict,
+        blank=True
+    )
+
+    date_from = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    date_to = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    file = models.FileField(
+        upload_to='reports/%Y/%m/',
+        validators=[
+            FileExtensionValidator(
+                allowed_extensions=['pdf', 'xlsx', 'xls', 'csv']
+            )
+        ],
+        null=True,
+        blank=True
+    )
+
+    file_size = models.PositiveBigIntegerField(
+        null=True,
+        blank=True
+    )
+
+    generated_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    error_message = models.TextField(
+        null=True,
+        blank=True
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='ai_reports',
+        null=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status']),
+            models.Index(fields=['created_by']),
+        ]
+
+
+    def __str__(self):
+        return self.name
+
+
+
+class ScheduledReport(models.Model):
+
+    FREQUENCY_CHOICES = (
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+    )
+
+    FORMAT_CHOICES = (
+        ('pdf', 'PDF'),
+        ('excel', 'Excel'),
+        ('csv', 'CSV'),
+    )
+
+
+    name = models.CharField(
+        max_length=255
+    )
+
+    frequency = models.CharField(
+        max_length=20,
+        choices=FREQUENCY_CHOICES
+    )
+
+    format = models.CharField(
+        max_length=10,
+        choices=FORMAT_CHOICES
+    )
+
+    config = models.JSONField(
+        default=dict,
+        blank=True
+    )
+
+    recipients = models.JSONField(
+        default=list
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    next_run_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    last_run_at = models.DateTimeField(
+        null=True,
+        blank=True
+    )
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='ai_scheduled_reports',
+        null=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_active']),
+            models.Index(fields=['next_run_at']),
+        ]
+
+
+    def __str__(self):
+        return self.name

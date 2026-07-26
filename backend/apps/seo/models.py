@@ -7,11 +7,16 @@ from apps.projects.models import Project
 class SEOKeyword(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='keywords')
-    keyword = models.CharField(max_length=500, db_index=True)
+    keyword = models.CharField(max_length=255, db_index=True)
 
     class Meta:
         db_table = 'seo_keywords'
-        unique_together = ('project', 'keyword')
+        constraints = [
+                models.UniqueConstraint(
+                fields=['project', 'keyword'],
+                name='unique_project_keyword'
+                )
+]
         indexes = [
             models.Index(fields=['project', 'keyword']),
         ]
@@ -23,11 +28,16 @@ class SEOKeyword(TimeStampedModel):
 class SEOPage(TimeStampedModel):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='pages')
-    url = models.CharField(max_length=2048, db_index=True)
+    url = models.URLField(max_length=500, db_index=True)
 
     class Meta:
         db_table = 'seo_pages'
-        unique_together = ('project', 'url')
+        constraints = [
+        models.UniqueConstraint(
+        fields=['project', 'url'],
+        name='unique_project_url'
+        )
+]
 
     def __str__(self):
         return self.url
