@@ -24,7 +24,6 @@ export const authApi = {
 
     return response
   },
-}
 
 
   register: async (data: RegisterRequest) => {
