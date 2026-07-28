@@ -15,6 +15,7 @@ export interface User {
   profile: UserProfile | null
 }
 
+
 export interface UserProfile {
   timezone: string
   language: string
@@ -23,20 +24,24 @@ export interface UserProfile {
   notification_in_app: boolean
 }
 
+
 export interface AuthTokens {
   access: string
   refresh: string
 }
 
+
 export interface LoginResponse {
-  user: User
-  tokens: AuthTokens
+  access: string
+  refresh: string
 }
+
 
 export interface LoginRequest {
   email: string
   password: string
 }
+
 
 export interface RegisterRequest {
   email: string

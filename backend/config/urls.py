@@ -18,6 +18,7 @@ api_v1_patterns = [
     path('ai/', include('apps.ai.urls')),
     path('monitoring/', include('apps.monitoring.urls')),
     path('backup/', include('apps.backup.urls')),
+    path('auth/', include('apps.users.urls'))
 ]
 
 urlpatterns = [

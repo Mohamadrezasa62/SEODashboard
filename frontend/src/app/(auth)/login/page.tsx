@@ -41,13 +41,20 @@ export default function LoginPage() {
 
   const loginMutation = useMutation({
     mutationFn: authApi.login,
-    onSuccess: (response) => {
-      if (response.data) {
-        setUser(response.data.user)
-        toast.success('خوش آمدید!')
-        router.push(redirect)
-      }
-    },
+    onSuccess: async () => {
+  try {
+    const me = await authApi.getMe()
+
+    if (me.data) {
+      setUser(me.data)
+      toast.success('خوش آمدید!')
+      router.push(redirect)
+    }
+
+  } catch {
+    toast.error('دریافت اطلاعات کاربر ناموفق بود')
+  }
+},
     onError: (error: any) => {
       const message = error?.response?.data?.message || 'ایمیل یا رمز عبور اشتباه است'
       toast.error(message)

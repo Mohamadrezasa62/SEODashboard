@@ -44,13 +44,19 @@ class UpdateProfileSerializer(serializers.Serializer):
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(write_only=True)
-    new_password = serializers.CharField(write_only=True, min_length=8)
+    new_password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
-    def validate(self, data):
-        if data['new_password'] != data['confirm_password']:
-            raise serializers.ValidationError({'confirm_password': 'Passwords do not match.'})
-        return data
+    def validate_new_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match."
+            })
+        return attrs
 
 
 class CreateUserSerializer(serializers.Serializer):
@@ -65,3 +71,53 @@ class CreateUserSerializer(serializers.Serializer):
         if User.objects.filter(email=value.lower()).exists():
             raise serializers.ValidationError('This email is already registered.')
         return value.lower()
+
+
+
+from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
+
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate_email(self, value):
+        return value.lower()
+
+
+class VerifyEmailSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=64)
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        value = value.lower()
+
+        from .models import User
+        if not User.objects.filter(email=value, is_active=True).exists():
+            raise serializers.ValidationError("No active user found with this email.")
+
+        return value
+
+
+class ResetPasswordSerializer(serializers.Serializer):
+    token = serializers.CharField(max_length=64)
+    password = serializers.CharField(
+        write_only=True,
+        min_length=8,
+    )
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate_password(self, value):
+        validate_password(value)
+        return value
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError({
+                "confirm_password": "Passwords do not match."
+            })
+        return attrs
