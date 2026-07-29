@@ -1,0 +1,45 @@
+{
+  "name": "SEO Dashboard",
+  "short_name": "SEO",
+  "description": "Enterprise SEO Management Dashboard - مدیریت سئو سازمانی",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "fa",
+  "dir": "rtl",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "SEO Analytics",
+      "url": "/seo",
+      "description": "مشاهده آنالیز SEO"
+    },
+    {
+      "name": "پروژه‌ها",
+      "url": "/projects",
+      "description": "مدیریت پروژه‌ها"
+    },
+    {
+      "name": "فیدبک",
+      "url": "/feedback",
+      "description": "مشاهده فیدبک‌ها"
+    }
+  ]
+}

@@ -53,3 +53,40 @@ class SystemHealthLog(TimeStampedModel):
             models.Index(fields=['service', 'status']),
             models.Index(fields=['created_at']),
         ]
+
+
+class TaskLog(TimeStampedModel):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('running', 'Running'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+        ('retrying', 'Retrying'),
+        ('revoked', 'Revoked'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    task_id = models.CharField(max_length=255, unique=True, db_index=True)
+    task_name = models.CharField(max_length=255, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', db_index=True)
+    args = models.JSONField(default=list)
+    kwargs = models.JSONField(default=dict)
+    result = models.JSONField(null=True, blank=True)
+    error_message = models.TextField(null=True, blank=True)
+    traceback = models.TextField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    duration_seconds = models.FloatField(null=True, blank=True)
+    retries = models.PositiveSmallIntegerField(default=0)
+    worker = models.CharField(max_length=255, null=True, blank=True)
+
+    class Meta:
+        db_table = 'task_logs'
+        indexes = [
+            models.Index(fields=['task_name', 'status']),
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.task_name} [{self.status}]'
