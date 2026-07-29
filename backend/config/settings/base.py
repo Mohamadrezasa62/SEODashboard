@@ -87,6 +87,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'apps.core.middleware.RequestLoggingMiddleware',
     'apps.core.middleware.AuditMiddleware',
+    'apps.core.middleware.SecurityHeadersMiddleware',
 ]
 
 # --------------------------------------------------
@@ -209,13 +210,24 @@ REST_FRAMEWORK = {
     ],
     'EXCEPTION_HANDLER': 'apps.core.exceptions.custom_exception_handler',
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle',
+        'apps.core.throttling.BurstRateThrottle',
+        'apps.core.throttling.SustainedRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
         'user': '1000/hour',
+        'burst': '60/min',
+        'sustained': '1000/hour',
+        'anon': '100/hour',
+        'user': '1000/hour',
+        'login': '10/hour',
+        'register': '5/hour',
+        'password_reset': '5/hour',
+        'gsc_sync': '10/hour',
+        'ai_request': '50/hour',
+        'report_generation': '20/hour',
     },
+    'DEFAULT_SCHEMA_CLASS': 'rest_framework.openapi.AutoSchema',
 }
 
 # --------------------------------------------------

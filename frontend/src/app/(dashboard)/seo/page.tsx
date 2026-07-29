@@ -1,71 +1,82 @@
 'use client'
 
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { RefreshCw, Loader2 } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { RefreshCw, Loader2, GitCompare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import { MetricCard } from '@/components/dashboard/MetricCard'
 import { TrendChart } from '@/components/charts/TrendChart'
 import { KeywordsTable } from '@/components/seo/KeywordsTable'
 import { PagesTable } from '@/components/seo/PagesTable'
 import { DeviceChart } from '@/components/charts/DeviceChart'
+import { CompareView } from '@/components/seo/CompareView'
+import { PageHeader } from '@/components/shared/PageHeader'
 import { projectsApi } from '@/lib/api/projects'
 import { seoApi } from '@/lib/api/seo'
 import { QUERY_KEYS, DATE_RANGES } from '@/lib/constants'
 import { getDateRange } from '@/lib/utils'
 import { MousePointerClick, Eye, TrendingUp, Search } from 'lucide-react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useEffect } from 'react'
 
 export default function SEOPage() {
   const queryClient = useQueryClient()
-  const [selectedProjectId, setSelectedProjectId] = useState<string>('')
+  const [selectedProjectId, setSelectedProjectId] = useState('')
   const [dateRange, setDateRange] = useState(28)
+  const [compareMode, setCompareMode] = useState(false)
+  const [compareDateRange, setCompareDateRange] = useState(28)
 
-  const { data: projectsData, isLoading: projectsLoading } = useQuery({
+  const { data: projectsData } = useQuery({
     queryKey: QUERY_KEYS.PROJECTS,
     queryFn: () => projectsApi.list({ status: 'active' }),
-    onSuccess: (data) => {
-      if (data.data?.length && !selectedProjectId) {
-        setSelectedProjectId(data.data[0].id)
-      }
-    },
   })
 
   const projects = projectsData?.data ?? []
+
+  useEffect(() => {
+    if (projects.length > 0 && !selectedProjectId) {
+      setSelectedProjectId((projects as any[])[0].id)
+    }
+  }, [projects, selectedProjectId])
+
   const filters = selectedProjectId ? getDateRange(dateRange) : undefined
 
   const { data: summaryData, isLoading: summaryLoading } = useQuery({
     queryKey: [...QUERY_KEYS.SEO_SUMMARY(selectedProjectId), dateRange],
     queryFn: () => seoApi.getSummary(selectedProjectId, filters),
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !compareMode,
   })
 
   const { data: trendData, isLoading: trendLoading } = useQuery({
     queryKey: [...QUERY_KEYS.SEO_TREND(selectedProjectId), dateRange],
     queryFn: () => seoApi.getDailyTrend(selectedProjectId, filters),
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !compareMode,
   })
 
   const { data: keywordsData, isLoading: keywordsLoading } = useQuery({
     queryKey: [...QUERY_KEYS.SEO_KEYWORDS(selectedProjectId), dateRange],
     queryFn: () => seoApi.getTopKeywords(selectedProjectId, { ...filters, limit: 100 }),
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !compareMode,
   })
 
   const { data: pagesData, isLoading: pagesLoading } = useQuery({
     queryKey: [...QUERY_KEYS.SEO_PAGES(selectedProjectId), dateRange],
     queryFn: () => seoApi.getTopPages(selectedProjectId, { ...filters, limit: 100 }),
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !compareMode,
   })
 
   const { data: deviceData, isLoading: deviceLoading } = useQuery({
     queryKey: ['seo', selectedProjectId, 'devices', dateRange],
     queryFn: () => seoApi.getDeviceBreakdown(selectedProjectId, filters),
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !compareMode,
   })
 
   const syncMutation = useMutation({
@@ -80,63 +91,110 @@ export default function SEOPage() {
   })
 
   const summary = summaryData?.data
-  const trend = trendData?.data ?? []
-  const keywords = keywordsData?.data ?? []
-  const pages = pagesData?.data ?? []
-  const devices = deviceData?.data ?? []
+  const trend = (trendData?.data ?? []) as any[]
+  const keywords = (keywordsData?.data ?? []) as any[]
+  const pages = (pagesData?.data ?? []) as any[]
+  const devices = (deviceData?.data ?? []) as any[]
+
+  const primaryRange = getDateRange(dateRange)
+  const secondaryRange = getDateRange(compareDateRange * 2)
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">SEO Analytics</h1>
-          <p className="text-muted-foreground text-sm mt-1">آنالیز عملکرد موتور جستجو</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="انتخاب پروژه" />
-            </SelectTrigger>
-            <SelectContent>
-              {projects.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <PageHeader
+        title="SEO Analytics"
+        description="آنالیز عملکرد موتور جستجو"
+        actions={
+          <div className="flex items-center gap-3 flex-wrap">
+            <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="انتخاب پروژه" />
+              </SelectTrigger>
+              <SelectContent>
+                {(projects as any[]).map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={String(dateRange)} onValueChange={(v) => setDateRange(Number(v))}>
-            <SelectTrigger className="w-44">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DATE_RANGES.map((r) => (
-                <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={String(dateRange)} onValueChange={(v) => setDateRange(Number(v))}>
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGES.map((r) => (
+                  <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => syncMutation.mutate()}
-            disabled={!selectedProjectId || syncMutation.isPending}
-          >
-            {syncMutation.isPending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCw className="w-4 h-4" />
-            )}
-            <span className="mr-2">همگام‌سازی</span>
-          </Button>
-        </div>
-      </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="compare-mode"
+                checked={compareMode}
+                onCheckedChange={setCompareMode}
+              />
+              <Label htmlFor="compare-mode" className="text-sm cursor-pointer">
+                <GitCompare className="w-4 h-4 inline ml-1" />
+                مقایسه
+              </Label>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => syncMutation.mutate()}
+              disabled={!selectedProjectId || syncMutation.isPending}
+            >
+              {syncMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              <span className="mr-2">همگام‌سازی</span>
+            </Button>
+          </div>
+        }
+      />
 
       {!selectedProjectId ? (
         <Card>
-          <CardContent className="flex items-center justify-center py-16 text-muted-foreground">
-            <p>یک پروژه انتخاب کنید</p>
+          <CardContent className="flex items-center justify-center py-16 text-muted-foreground text-sm">
+            یک پروژه انتخاب کنید
           </CardContent>
         </Card>
+      ) : compareMode ? (
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Label className="text-sm">بازه مقایسه:</Label>
+            <Select
+              value={String(compareDateRange)}
+              onValueChange={(v) => setCompareDateRange(Number(v))}
+            >
+              <SelectTrigger className="w-44">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {DATE_RANGES.map((r) => (
+                  <SelectItem key={r.value} value={String(r.value)}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <CompareView
+            projectId={selectedProjectId}
+            primary={{
+              label: DATE_RANGES.find((r) => r.value === dateRange)?.label || 'دوره اول',
+              date_from: primaryRange.date_from,
+              date_to: primaryRange.date_to,
+            }}
+            secondary={{
+              label: DATE_RANGES.find((r) => r.value === compareDateRange)?.label || 'دوره دوم',
+              date_from: secondaryRange.date_from,
+              date_to: secondaryRange.date_to,
+            }}
+          />
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
