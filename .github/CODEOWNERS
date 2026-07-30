@@ -1,0 +1,11 @@
+# Backend
+/backend/ @your-username
+
+# Frontend
+/frontend/ @your-username
+
+# Infrastructure
+/docker/ @your-username
+/nginx/ @your-username
+/.github/ @your-username
+/docker-compose*.yml @your-username

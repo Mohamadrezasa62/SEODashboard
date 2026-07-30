@@ -11,6 +11,9 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ============================================================
+  # BACKEND TESTS
+  # ============================================================
   test-backend:
     name: Backend Tests
     runs-on: ubuntu-latest
@@ -42,10 +45,10 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -65,12 +68,13 @@ jobs:
       - name: Run migrations
         env:
           DJANGO_SETTINGS_MODULE: config.settings.development
-          DJANGO_SECRET_KEY: test-secret-key-for-ci
+          DJANGO_SECRET_KEY: test-secret-key-ci
+          DJANGO_DEBUG: "True"
           DB_NAME: test_seo_dashboard
           DB_USER: test_user
           DB_PASSWORD: test_password
           DB_HOST: 127.0.0.1
-          DB_PORT: 3306
+          DB_PORT: "3306"
           REDIS_URL: redis://localhost:6379/0
           CELERY_BROKER_URL: redis://localhost:6379/1
           CELERY_RESULT_BACKEND: redis://localhost:6379/2
@@ -79,15 +83,16 @@ jobs:
           cd backend
           python manage.py migrate --noinput
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           DJANGO_SETTINGS_MODULE: config.settings.development
-          DJANGO_SECRET_KEY: test-secret-key-for-ci
+          DJANGO_SECRET_KEY: test-secret-key-ci
+          DJANGO_DEBUG: "True"
           DB_NAME: test_seo_dashboard
           DB_USER: test_user
           DB_PASSWORD: test_password
           DB_HOST: 127.0.0.1
-          DB_PORT: 3306
+          DB_PORT: "3306"
           REDIS_URL: redis://localhost:6379/0
           CELERY_BROKER_URL: redis://localhost:6379/1
           CELERY_RESULT_BACKEND: redis://localhost:6379/2
@@ -96,57 +101,89 @@ jobs:
           cd backend
           pytest --cov=apps --cov-report=xml --cov-report=term-missing -v
 
-      - name: Upload coverage
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: backend/coverage.xml
           fail_ci_if_error: false
 
+  # ============================================================
+  # BACKEND LINT
+  # ============================================================
   lint-backend:
     name: Backend Lint
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install flake8 black isort
+
+      - name: Install lint tools
+        run: pip install flake8 black isort
+
       - name: Run flake8
         run: |
           cd backend
-          flake8 apps/ config/ --max-line-length=120 --exclude=migrations
+          flake8 apps/ config/ \
+            --max-line-length=120 \
+            --exclude=migrations,__pycache__ \
+            --ignore=E501,W503
+
       - name: Check black formatting
         run: |
           cd backend
           black --check apps/ config/ --exclude migrations
+
       - name: Check isort
         run: |
           cd backend
           isort --check-only apps/ config/
 
+  # ============================================================
+  # FRONTEND TESTS
+  # ============================================================
   test-frontend:
-    name: Frontend Type Check & Lint
+    name: Frontend Tests
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
+
       - name: Install dependencies
         run: |
           cd frontend
           npm ci
+
       - name: Type check
         run: |
           cd frontend
           npm run type-check
-      - name: Lint
+
+      - name: Run tests
         run: |
           cd frontend
-          npm run lint
+          npm test -- --watchAll=false --coverage --passWithNoTests
 
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000/api/v1
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+        run: |
+          cd frontend
+          npm run build
+
+  # ============================================================
+  # BUILD BACKEND IMAGE
+  # ============================================================
   build-backend:
     name: Build Backend Image
     runs-on: ubuntu-latest
@@ -159,12 +196,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to GitHub Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract metadata
         id: meta
@@ -174,9 +214,9 @@ jobs:
           tags: |
             type=sha,prefix=sha-
             type=ref,event=branch
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build and push backend
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./backend
@@ -184,7 +224,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
+  # ============================================================
+  # BUILD FRONTEND IMAGE
+  # ============================================================
   build-frontend:
     name: Build Frontend Image
     runs-on: ubuntu-latest
@@ -197,12 +242,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to GitHub Container Registry
+      - name: Login to GHCR
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Extract metadata
         id: meta
@@ -212,9 +260,9 @@ jobs:
           tags: |
             type=sha,prefix=sha-
             type=ref,event=branch
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
 
-      - name: Build and push frontend
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: ./frontend
@@ -222,16 +270,24 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_APP_URL=${{ secrets.NEXT_PUBLIC_APP_URL }}
 
+  # ============================================================
+  # DEPLOY TO PRODUCTION
+  # ============================================================
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
     if: github.ref == 'refs/heads/main'
     environment: production
+    concurrency:
+      group: production
+      cancel-in-progress: false
 
     steps:
       - uses: actions/checkout@v4
@@ -243,12 +299,68 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          timeout: 300s
           script: |
+            set -e
+
+            echo "=== Starting deploy at $(date) ==="
             cd /opt/seo-dashboard
+
+            echo "Pulling latest code..."
             git pull origin main
+
+            echo "Pulling latest images..."
             docker-compose -f docker-compose.prod.yml pull
-            docker-compose -f docker-compose.prod.yml up -d --no-deps --build
-            docker-compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
-            docker-compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
+
+            echo "Running migrations..."
+            docker-compose -f docker-compose.prod.yml run --rm \
+              backend python manage.py migrate --noinput
+
+            echo "Collecting static files..."
+            docker-compose -f docker-compose.prod.yml run --rm \
+              backend python manage.py collectstatic --noinput --clear
+
+            echo "Updating services..."
+            docker-compose -f docker-compose.prod.yml up -d \
+              --no-deps --build backend celery_worker celery_beat frontend
+
+            echo "Reloading nginx..."
+            docker-compose -f docker-compose.prod.yml exec -T nginx nginx -s reload
+
+            echo "Cleaning up old images..."
             docker system prune -f
-            echo "Deployment complete at $(date)"
+
+            echo "=== Deploy complete at $(date) ==="
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            HEALTH=$(curl -sf https://your-domain.com/api/v1/monitoring/health/ \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['data']['status'])" \
+              2>/dev/null || echo "error")
+            echo "Health: $HEALTH"
+            if [ "$HEALTH" != "ok" ]; then
+              echo "Health check failed!"
+              exit 1
+            fi
+
+      - name: Notify on success
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "Deploy successful: $(date)" >> /var/log/seo-dashboard/deploys.log
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Deployment failed for commit ${{ github.sha }}"

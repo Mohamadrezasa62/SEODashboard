@@ -1,0 +1,35 @@
+name: Scheduled Checks
+
+on:
+  schedule:
+    - cron: '0 6 * * 1'  # every Monday at 6 AM
+
+jobs:
+  dependency-check:
+    name: Check Dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check for outdated packages
+        run: |
+          pip install pip-audit
+          cd backend
+          pip install -r requirements/production.txt
+          pip-audit --format=json || true
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check npm vulnerabilities
+        run: |
+          cd frontend
+          npm audit --audit-level=high || true
