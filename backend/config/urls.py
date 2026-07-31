@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 api_v1_patterns = [
-    # path('auth/', include('apps.authentication.urls')),
+    path('auth/', include('apps.authentication.urls')),
     path('users/', include('apps.users.urls')),
     path('rbac/', include('apps.rbac.urls')),
     path('projects/', include('apps.projects.urls')),
@@ -18,7 +18,6 @@ api_v1_patterns = [
     path('ai/', include('apps.ai.urls')),
     path('monitoring/', include('apps.monitoring.urls')),
     path('backup/', include('apps.backup.urls')),
-    path('auth/', include('apps.users.urls'))
 ]
 
 urlpatterns = [

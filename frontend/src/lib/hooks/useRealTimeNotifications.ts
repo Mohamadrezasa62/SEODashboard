@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { QUERY_KEYS } from '@/lib/constants'
 import { useAuthStore } from '@/store/authStore'
 import toast from 'react-hot-toast'
-import { Bell } from 'lucide-react'
 
 const POLL_INTERVAL = 30 * 1000 // 30 seconds
 const INITIAL_DELAY = 5 * 1000  // 5 seconds
@@ -31,21 +30,13 @@ export function useRealTimeNotifications() {
 
         if (lastCountRef.current !== null && freshCount > lastCountRef.current) {
           const newCount = freshCount - lastCountRef.current
-          toast.custom(
-            (t) => (
-              <div className={`
-                flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg
-                bg-card border border-border text-card-foreground
-                ${t.visible ? 'animate-fade-in' : 'opacity-0'}
-              `}>
-                <Bell className="w-4 h-4 text-primary" />
-                <p className="text-sm">
-                  {newCount} اعلان جدید دارید
-                </p>
-              </div>
-            ),
-            { duration: 4000 }
-          )
+          
+          // استفاده از API متنی toast بدون کدهای JSX
+          toast(`${newCount} اعلان جدید دارید`, {
+            duration: 4000,
+            icon: '🔔', // استفاده از ایموجی به جای آیکون Lucide
+          })
+
           queryClient.invalidateQueries({ queryKey: QUERY_KEYS.NOTIFICATIONS })
         }
 

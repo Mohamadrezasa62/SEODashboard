@@ -5,10 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Plus, FileText, Download, Trash2,
   Clock, CheckCircle, XCircle, Loader2,
-  Calendar, RefreshCw,
+  Calendar,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -18,6 +18,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { CreateReportDialog } from '@/components/reports/CreateReportDialog'
 import { CreateScheduledReportDialog } from '@/components/reports/CreateScheduledReportDialog'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { EmptyState } from '@/components/shared/EmptyState'
 import { projectsApi } from '@/lib/api/projects'
 import { reportsApi, type Report, type ScheduledReport } from '@/lib/api/reports'
 import { QUERY_KEYS } from '@/lib/constants'
@@ -31,7 +33,11 @@ const FORMAT_COLORS: Record<string, string> = {
   csv: 'text-blue-500 bg-blue-500/10',
 }
 
-const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; label: string }> = {
+const STATUS_CONFIG: Record<string, {
+  icon: React.ElementType
+  color: string
+  label: string
+}> = {
   pending: { icon: Clock, color: 'text-yellow-500', label: 'در صف' },
   generating: { icon: Loader2, color: 'text-blue-500', label: 'در حال ساخت' },
   ready: { icon: CheckCircle, color: 'text-green-500', label: 'آماده' },
@@ -61,8 +67,9 @@ export default function ReportsPage() {
     queryFn: () => reportsApi.list(selectedProjectId),
     enabled: !!selectedProjectId,
     refetchInterval: (data) => {
-      const hasGenerating = data?.data?.some(
-        (r: Report) => r.status === 'generating' || r.status === 'pending'
+      const reports = data?.data as Report[] | undefined
+      const hasGenerating = reports?.some(
+        (r) => r.status === 'generating' || r.status === 'pending'
       )
       return hasGenerating ? 5000 : false
     },
@@ -100,41 +107,41 @@ export default function ReportsPage() {
   })
 
   const projects = projectsData?.data ?? []
-  const reports = reportsData?.data ?? []
-  const scheduled = scheduledData?.data ?? []
+  const reports = (reportsData?.data ?? []) as Report[]
+  const scheduled = (scheduledData?.data ?? []) as ScheduledReport[]
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">گزارشات</h1>
-          <p className="text-muted-foreground text-sm mt-1">ساخت و مدیریت گزارشات SEO</p>
-        </div>
-        <div className="flex items-center gap-2">
-          {canManage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCreateScheduledOpen(true)}
-              disabled={!selectedProjectId}
-            >
-              <Calendar className="w-4 h-4 ml-2" />
-              زمان‌بندی
+      <PageHeader
+        title="گزارشات"
+        description="ساخت و مدیریت گزارشات SEO"
+        actions={
+          <div className="flex items-center gap-2">
+            {canManage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCreateScheduledOpen(true)}
+                disabled={!selectedProjectId}
+              >
+                <Calendar className="w-4 h-4 ml-2" />
+                زمان‌بندی
+              </Button>
+            )}
+            <Button onClick={() => setCreateOpen(true)} disabled={!selectedProjectId}>
+              <Plus className="w-4 h-4 ml-2" />
+              گزارش جدید
             </Button>
-          )}
-          <Button onClick={() => setCreateOpen(true)} disabled={!selectedProjectId}>
-            <Plus className="w-4 h-4 ml-2" />
-            گزارش جدید
-          </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
         <SelectTrigger className="w-52">
           <SelectValue placeholder="انتخاب پروژه" />
         </SelectTrigger>
         <SelectContent>
-          {projects.map((p: any) => (
+          {(projects as any[]).map((p) => (
             <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
           ))}
         </SelectContent>
@@ -142,8 +149,12 @@ export default function ReportsPage() {
 
       {!selectedProjectId ? (
         <Card>
-          <CardContent className="flex items-center justify-center py-16 text-muted-foreground text-sm">
-            یک پروژه انتخاب کنید
+          <CardContent>
+            <EmptyState
+              icon={FileText}
+              title="یک پروژه انتخاب کنید"
+              description="برای مشاهده و ساخت گزارشات، ابتدا یک پروژه انتخاب کنید"
+            />
           </CardContent>
         </Card>
       ) : (
@@ -162,15 +173,19 @@ export default function ReportsPage() {
               </div>
             ) : reports.length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <FileText className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm">هنوز گزارشی وجود ندارد</p>
+                <CardContent>
+                  <EmptyState
+                    icon={FileText}
+                    title="هنوز گزارشی وجود ندارد"
+                    description="اولین گزارش SEO خود را بسازید"
+                    action={{ label: 'گزارش جدید', onClick: () => setCreateOpen(true) }}
+                  />
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {reports.map((report: Report) => {
-                  const statusConfig = STATUS_CONFIG[report.status]
+                {reports.map((report) => {
+                  const statusConfig = STATUS_CONFIG[report.status] || STATUS_CONFIG.pending
                   const StatusIcon = statusConfig.icon
                   return (
                     <Card key={report.id} className="hover:shadow-sm transition-shadow">
@@ -185,7 +200,10 @@ export default function ReportsPage() {
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <p className="font-medium text-sm">{report.name}</p>
-                              <Badge variant="secondary" className={cn('text-xs', FORMAT_COLORS[report.format])}>
+                              <Badge
+                                variant="secondary"
+                                className={cn('text-xs', FORMAT_COLORS[report.format])}
+                              >
                                 {report.format.toUpperCase()}
                               </Badge>
                             </div>
@@ -209,6 +227,11 @@ export default function ReportsPage() {
                                 </span>
                               )}
                             </div>
+                            {report.error_message && (
+                              <p className="mt-1 text-xs text-destructive">
+                                {report.error_message}
+                              </p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             {report.status === 'ready' && report.file_url && (
@@ -231,16 +254,12 @@ export default function ReportsPage() {
                                   deleteMutation.mutate(report.id)
                                 }
                               }}
+                              disabled={deleteMutation.isPending}
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </Button>
                           </div>
                         </div>
-                        {report.error_message && (
-                          <p className="mt-2 text-xs text-destructive bg-destructive/10 rounded px-2 py-1">
-                            {report.error_message}
-                          </p>
-                        )}
                       </CardContent>
                     </Card>
                   )
@@ -258,14 +277,22 @@ export default function ReportsPage() {
               </div>
             ) : scheduled.length === 0 ? (
               <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                  <Calendar className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-sm">هنوز گزارش زمان‌بندی‌شده‌ای وجود ندارد</p>
+                <CardContent>
+                  <EmptyState
+                    icon={Calendar}
+                    title="هنوز گزارش زمان‌بندی‌شده‌ای وجود ندارد"
+                    description="گزارشات خودکار دوره‌ای بسازید"
+                    action={
+                      canManage
+                        ? { label: 'زمان‌بندی جدید', onClick: () => setCreateScheduledOpen(true) }
+                        : undefined
+                    }
+                  />
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {scheduled.map((s: ScheduledReport) => (
+                {scheduled.map((s) => (
                   <Card key={s.id}>
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
@@ -278,19 +305,27 @@ export default function ReportsPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
                             <p className="font-medium text-sm">{s.name}</p>
-                            <Badge variant="secondary" className={cn('text-xs', FORMAT_COLORS[s.format])}>
+                            <Badge
+                              variant="secondary"
+                              className={cn('text-xs', FORMAT_COLORS[s.format])}
+                            >
                               {s.format.toUpperCase()}
                             </Badge>
                             <Badge
                               variant="secondary"
-                              className={cn('text-xs', s.is_active ? 'text-green-500' : 'text-muted-foreground')}
+                              className={cn(
+                                'text-xs',
+                                s.is_active ? 'text-green-500' : 'text-muted-foreground'
+                              )}
                             >
                               {s.is_active ? 'فعال' : 'غیرفعال'}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground">
                             <span>{FREQ_LABELS[s.frequency]}</span>
-                            {s.next_run_at && <span>اجرای بعدی: {formatDateTime(s.next_run_at)}</span>}
+                            {s.next_run_at && (
+                              <span>اجرای بعدی: {formatDateTime(s.next_run_at)}</span>
+                            )}
                             <span>{s.recipients.length} گیرنده</span>
                           </div>
                         </div>
@@ -299,10 +334,13 @@ export default function ReportsPage() {
                             variant="outline"
                             size="sm"
                             className="h-8"
-                            onClick={() => toggleScheduledMutation.mutate({
-                              id: s.id,
-                              active: !s.is_active,
-                            })}
+                            onClick={() =>
+                              toggleScheduledMutation.mutate({
+                                id: s.id,
+                                active: !s.is_active,
+                              })
+                            }
+                            disabled={toggleScheduledMutation.isPending}
                           >
                             {s.is_active ? 'غیرفعال' : 'فعال'}
                           </Button>
@@ -315,6 +353,7 @@ export default function ReportsPage() {
                                 deleteScheduledMutation.mutate(s.id)
                               }
                             }}
+                            disabled={deleteScheduledMutation.isPending}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>

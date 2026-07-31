@@ -16,6 +16,10 @@ dist/
 build/
 .env.example
 
+# Backend And Front Test Result
+backend-test-result.txt
+frontend-test-result.txt
+
 # Django
 *.log
 local_settings.py

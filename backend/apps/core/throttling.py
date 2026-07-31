@@ -1,5 +1,4 @@
 from rest_framework.throttling import AnonRateThrottle, UserRateThrottle
-from django.core.cache import cache
 
 
 class BurstRateThrottle(UserRateThrottle):
