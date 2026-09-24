@@ -1,243 +1,106 @@
-# How to run Project
-cd backend
-python -m venv .venv
-cd requirements
+# SEO Dashboard MVP
 
-docker-compose up -d
+نسخه فعلی پروژه از حالت release/production خارج شده و به یک MVP ساده تبدیل شده است. بک‌اند Django/DRF همان ساختار قبلی را حفظ کرده، اما فرانت‌اند دیگر Next.js، React، Tailwind یا هیچ فریم‌ورک دیگری ندارد و فقط با HTML، CSS و JavaScript خام اجرا می‌شود.
 
-py -m pip install -r base.txt
-py -m pip install -r development.txt
-py -m pip install -r production.txt
+## قابلیت‌های MVP
 
-py manage.py makemigrations
-py manage.py migrate
+- ورود و ثبت‌نام با API فعلی بک‌اند
+- ذخیره توکن JWT در مرورگر برای استفاده ساده در توسعه
+- ساخت و مشاهده پروژه‌ها
+- انتخاب پروژه فعال
+- نمایش خلاصه SEO، روند کلیک، دستگاه‌ها، کلمات کلیدی و صفحات برتر در صورت وجود داده
+- نمایش KPI ها و گزارش‌های پروژه در صورت وجود داده
+- نمایش health check سیستم
+- تنظیم دستی آدرس API از داخل رابط کاربری
 
-cd ../frontend
-npm install
-npm run dev
+## ساختار مهم
 
-# open a new terminal and type:
-cd ./backend
-py manage.py runserver
+```text
+backend/                 Django + DRF بدون تغییر معماری اصلی
+frontend/public/          فرانت MVP با HTML/CSS/JS خام
+frontend/package.json     فقط برای اجرای local static server
+frontend/Dockerfile       سرو فرانت با nginx سبک
+docker-compose.yml        اجرای MySQL، Redis، Backend، Celery، Frontend و nginx
+nginx/conf.d/default.conf پروکسی توسعه روی HTTP ساده
+.env.example              نمونه تنظیمات توسعه
+```
 
-# SEO Dashboard
+## فعال‌سازی سریع با Docker
 
-پنل مدیریت SEO سازمانی با Multi-Tenant، RBAC، Feedback، AI Integration
-
-## Stack
-
-**Backend:** Django 5, DRF, Celery, Redis, MySQL 8
-**Frontend:** Next.js 14, TypeScript, Tailwind, Shadcn/UI, TanStack
-
-## Quick Start (Development)
+از ریشه پروژه اجرا کنید:
 
 ```bash
-# Clone
-git clone https://github.com/your-username/seo-dashboard.git
-cd seo-dashboard
+cd "C:\Users\Salmani\Desktop\Salmani\Social Projects\SEODashboard"
+copy .env.example .env
 
-# Copy env
-cp .env.example .env
-# Edit .env with your values
+docker compose up --build
+```
 
-# Start services
-docker-compose up -d db redis
+بعد از بالا آمدن سرویس‌ها، در یک ترمینال دیگر آماده‌سازی دیتابیس را انجام دهید:
 
-# Backend setup
-cd backend
-python -m venv .venv
-.venv\Scripts\activate  # Windows
-pip install -r requirements/development.txt
-python manage.py migrate
-python manage.py seed_permissions
-python manage.py createsuperuser
-python manage.py runserver
+```bash
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py seed_permissions
+docker compose exec backend python manage.py seed_initial_data
+docker compose exec backend python manage.py setup_periodic_tasks
+```
 
-# Frontend setup (new terminal)
+اگر کاربر مدیر آماده نشد، یک superuser بسازید:
+
+```bash
+docker compose exec backend python manage.py createsuperuser
+```
+
+## آدرس‌ها
+
+| بخش | آدرس |
+|---|---|
+| فرانت MVP | http://localhost:3000 |
+| فرانت از پشت nginx | http://localhost |
+| API بک‌اند | http://localhost:8000/api/v1/ |
+| پنل ادمین Django | http://localhost:8000/admin/ |
+| سلامت سیستم | http://localhost:8000/api/v1/monitoring/health/ |
+
+## اجرای فرانت بدون Docker
+
+اگر فقط می‌خواهید فرانت ساده را ببینید:
+
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-## Access
+سپس http://localhost:3000 را باز کنید. برای استفاده واقعی از داشبورد، بک‌اند هم باید روی http://localhost:8000/api/v1 فعال باشد.
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/api/v1/
-- Admin Panel: http://localhost:8000/admin/
-- Health Check: http://localhost:8000/api/v1/monitoring/health/
+## اجرای بک‌اند بدون Docker
 
-## Production Deploy
+ابتدا MySQL و Redis باید روی سیستم فعال باشند و مقدارهای `.env` با آن‌ها هماهنگ باشد.
 
 ```bash
-cp .env.prod.example .env.prod
-# Edit .env.prod
-
-chmod +x backend/scripts/deploy.sh
-./backend/scripts/deploy.sh
-```
-
-## Default Roles
-
-| Role | دسترسی |
-|------|--------|
-| Developer | دسترسی کامل |
-| Company Manager | مدیریت پروژه و گزارش |
-| Employee | پروژه‌های خود |
-
-## API Endpoints
-
-| Module | Base URL |
-|--------|----------|
-| Auth | /api/v1/auth/ |
-| Users | /api/v1/users/ |
-| RBAC | /api/v1/rbac/ |
-| Projects | /api/v1/projects/ |
-| SEO | /api/v1/seo/ |
-| GSC | /api/v1/gsc/ |
-| Feedback | /api/v1/feedback/ |
-| KPI | /api/v1/kpi/ |
-| Dashboard | /api/v1/dashboard/ |
-| Reports | /api/v1/reports/ |
-| AI | /api/v1/ai/ |
-| Monitoring | /api/v1/monitoring/ |
-| Backup | /api/v1/backup/ |
-
-# SEO Dashboard
-
-پنل مدیریت SEO سازمانی — Enterprise SEO Management Dashboard
-
-## Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Django 5, DRF, Celery, Redis, MySQL 8 |
-| Frontend | Next.js 14, TypeScript, Tailwind, Shadcn/UI |
-| Infrastructure | Docker, Nginx, GitHub Actions, Certbot |
-
-## Quick Start (Development)
-
-```bash
-# Clone
-git clone https://github.com/your-username/seo-dashboard.git
-cd seo-dashboard
-
-# Setup environment
-cp .env.example .env
-# Edit .env with your values
-
-# Start with Make
-make dev
-
-# OR manually:
-docker-compose up -d db redis
-
-# Backend
 cd backend
 python -m venv .venv
-.venv\Scripts\activate      # Windows
-# source .venv/bin/activate  # Linux/Mac
+.venv\Scripts\activate
 pip install -r requirements/development.txt
 python manage.py migrate
 python manage.py seed_permissions
 python manage.py seed_initial_data
-python manage.py setup_periodic_tasks
 python manage.py runserver
-
-# Frontend (new terminal)
-cd frontend
-npm install
-npm run dev
 ```
 
-## Access Points
+## نکته‌های استفاده
 
-| Service | URL |
-|---------|-----|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000/api/v1/ |
-| Admin Panel | http://localhost:8000/admin/ |
-| Health Check | http://localhost:8000/api/v1/monitoring/health/ |
+1. وارد فرانت شوید یا از فرم ثبت‌نام حساب بسازید.
+2. از بخش پروژه‌ها یک پروژه جدید اضافه کنید.
+3. پروژه فعال را از نوار بالای داشبورد انتخاب کنید.
+4. اگر داده SEO/GSC/KPI/Report در بک‌اند وجود داشته باشد، جدول‌ها و نمودارهای ساده پر می‌شوند.
+5. اگر API شما روی آدرس دیگری است، از کادر «آدرس API» در منوی کناری آن را تغییر دهید.
 
-## Default Credentials
+## تغییرات MVP
 
-| Role | Email | Password |
-|------|-------|----------|
-| Developer | admin@seodashboard.com | Admin1234! |
-
-## Production Deploy
-
-```bash
-# 1. Setup server
-cp .env.prod.example .env.prod
-nano .env.prod
-
-# 2. SSL Certificate
-make ssl DOMAIN=your-domain.com EMAIL=admin@your-domain.com
-
-# 3. Deploy
-make deploy
-```
-
-## API Endpoints
-
-| Module | Base URL |
-|--------|----------|
-| Auth | `/api/v1/auth/` |
-| Users | `/api/v1/users/` |
-| RBAC | `/api/v1/rbac/` |
-| Projects | `/api/v1/projects/` |
-| SEO | `/api/v1/seo/` |
-| GSC | `/api/v1/gsc/` |
-| Feedback | `/api/v1/feedback/` |
-| KPI | `/api/v1/kpi/` |
-| Dashboard | `/api/v1/dashboard/` |
-| Reports | `/api/v1/reports/` |
-| AI | `/api/v1/ai/` |
-| Monitoring | `/api/v1/monitoring/` |
-| Backup | `/api/v1/backup/` |
-
-## Architecture
-seo-dashboard/
-├── backend/ Django + DRF
-│ ├── apps/
-│ │ ├── core/ Base models, middleware, utils
-│ │ ├── users/ User management
-│ │ ├── authentication/ JWT + OAuth2
-│ │ ├── rbac/ Roles + Permissions
-│ │ ├── projects/ Project management
-│ │ ├── seo/ SEO data analysis
-│ │ ├── gsc/ Google Search Console
-│ │ ├── feedback/ Feedback system
-│ │ ├── notifications/ Notification center
-│ │ ├── kpi/ KPI tracking
-│ │ ├── dashboard/ Dashboard builder
-│ │ ├── reports/ Report generation
-│ │ ├── ai/ AI integration
-│ │ ├── monitoring/ System monitoring
-│ │ └── backup/ Backup & restore
-│ └── config/ Django settings
-├── frontend/ Next.js 14
-│ └── src/
-│ ├── app/ Pages (App Router)
-│ ├── components/ UI components
-│ ├── lib/ API, hooks, utils
-│ ├── store/ Zustand state
-│ └── types/ TypeScript types
-├── nginx/ Nginx config
-├── docker/ Dockerfiles
-└── .github/ CI/CD workflows
-
-
-## Testing
-
-```bash
-# Backend
-cd backend
-pytest --cov=apps -v
-
-# Frontend
-cd frontend
-npm test
-npm run type-check
-npm run build
-```
+- فرانت سنگین Next.js از مسیر اجرا کنار گذاشته شد.
+- فرانت جدید در `frontend/public` ساخته شد.
+- `frontend/Dockerfile` به nginx سبک تغییر کرد.
+- مسیرهای اشتباه Docker compose برای Dockerfileهای ناموجود اصلاح شد.
+- nginx توسعه دیگر اجبار HTTPS ندارد و برای MVP روی HTTP ساده کار می‌کند.
+- تکرارهای واضح `backend/apps/authentication/views.py` حذف شد.

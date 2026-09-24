@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SEO Dashboard MVP</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="ناوبری اصلی">
+      <div class="brand">
+        <span class="brand-mark">SD</span>
+        <div>
+          <strong>SEO Dashboard</strong>
+          <small>MVP</small>
+        </div>
+      </div>
+      <nav class="nav">
+        <button class="nav-link active" data-section="overview">نمای کلی</button>
+        <button class="nav-link" data-section="projects">پروژه‌ها</button>
+        <button class="nav-link" data-section="seo">SEO</button>
+        <button class="nav-link" data-section="kpi">KPI</button>
+        <button class="nav-link" data-section="reports">گزارش‌ها</button>
+        <button class="nav-link" data-section="system">سیستم</button>
+      </nav>
+      <div class="connection-box">
+        <label for="apiBase">آدرس API</label>
+        <input id="apiBase" type="url" value="http://localhost:8000/api/v1" spellcheck="false">
+        <button id="saveApi" class="secondary">ذخیره</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">نسخه ساده و قابل استفاده</p>
+          <h1>داشبورد SEO</h1>
+        </div>
+        <div class="user-panel">
+          <span id="authState" class="status-pill muted">وارد نشده</span>
+          <button id="logoutBtn" class="secondary hidden">خروج</button>
+        </div>
+      </header>
+
+      <section id="authPanel" class="auth-grid">
+        <form id="loginForm" class="panel compact">
+          <h2>ورود</h2>
+          <label>ایمیل<input name="email" type="email" autocomplete="email" required></label>
+          <label>رمز عبور<input name="password" type="password" autocomplete="current-password" required></label>
+          <button type="submit">ورود به داشبورد</button>
+        </form>
+        <form id="registerForm" class="panel compact">
+          <h2>ثبت‌نام سریع</h2>
+          <div class="two-col">
+            <label>نام<input name="first_name" required></label>
+            <label>نام خانوادگی<input name="last_name" required></label>
+          </div>
+          <label>ایمیل<input name="email" type="email" required></label>
+          <div class="two-col">
+            <label>رمز عبور<input name="password" type="password" minlength="8" required></label>
+            <label>تکرار رمز<input name="confirm_password" type="password" minlength="8" required></label>
+          </div>
+          <button type="submit" class="secondary">ساخت حساب</button>
+        </form>
+      </section>
+
+      <section class="toolbar panel">
+        <div>
+          <label for="projectSelect">پروژه فعال</label>
+          <select id="projectSelect"><option value="">اول وارد شوید و پروژه بسازید</option></select>
+        </div>
+        <button id="refreshBtn" class="secondary">به‌روزرسانی داده‌ها</button>
+      </section>
+
+      <section id="overview" class="section active">
+        <div class="metrics-grid" id="metricsGrid"></div>
+        <div class="grid-2">
+          <div class="panel"><h2>روند کلیک</h2><div id="trendChart" class="mini-chart"></div></div>
+          <div class="panel"><h2>دستگاه‌ها</h2><div id="deviceChart" class="list-chart"></div></div>
+        </div>
+      </section>
+
+      <section id="projects" class="section">
+        <div class="panel">
+          <div class="panel-header"><h2>پروژه‌ها</h2><button id="openProjectForm">پروژه جدید</button></div>
+          <form id="projectForm" class="inline-form hidden">
+            <input name="name" placeholder="نام پروژه" required>
+            <input name="domain" placeholder="example.com" required>
+            <input name="description" placeholder="توضیح کوتاه">
+            <button type="submit">افزودن</button>
+          </form>
+          <div id="projectsList" class="table-wrap"></div>
+        </div>
+      </section>
+
+      <section id="seo" class="section">
+        <div class="grid-2">
+          <div class="panel"><h2>کلمات کلیدی برتر</h2><div id="keywordsList" class="table-wrap"></div></div>
+          <div class="panel"><h2>صفحه‌های برتر</h2><div id="pagesList" class="table-wrap"></div></div>
+        </div>
+      </section>
+
+      <section id="kpi" class="section">
+        <div class="panel"><h2>KPI ها</h2><div id="kpiList" class="table-wrap"></div></div>
+      </section>
+
+      <section id="reports" class="section">
+        <div class="panel"><h2>گزارش‌ها</h2><div id="reportsList" class="table-wrap"></div></div>
+      </section>
+
+      <section id="system" class="section">
+        <div class="grid-2">
+          <div class="panel"><h2>سلامت سیستم</h2><pre id="healthBox" class="code-box">در انتظار دریافت...</pre></div>
+          <div class="panel"><h2>وضعیت</h2><div id="messageLog" class="message-log"></div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
