@@ -12,11 +12,16 @@ until nc -z "${DB_HOST:-db}" "${DB_PORT:-3306}"; do
 done
 echo "  MySQL is ready."
 
-echo "[2/4] Running migrations..."
-python manage.py migrate --noinput
+if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
+    echo "[2/4] Running migrations..."
+    python manage.py migrate --noinput
 
-echo "[3/4] Collecting static files..."
-python manage.py collectstatic --noinput --clear
+    echo "[3/4] Collecting static files..."
+    python manage.py collectstatic --noinput --clear
+else
+    echo "[2/4] Skipping migrations."
+    echo "[3/4] Skipping static files."
+fi
 
 echo "[4/4] Starting server..."
 exec "$@"

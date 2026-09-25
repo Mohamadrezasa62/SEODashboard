@@ -46,7 +46,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 COPY requirements/ requirements/
-RUN pip install --user --no-cache-dir -r requirements/production.txt
+ARG REQUIREMENTS_FILE=production.txt
+RUN pip install --prefix=/install --no-cache-dir -r "requirements/${REQUIREMENTS_FILE}"
 
 FROM base AS runner
 
@@ -60,8 +61,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /install /usr/local
 
 COPY . .
 

@@ -41,12 +41,15 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: docker-dev.txt
     container_name: seo_backend
     restart: unless-stopped
     env_file: .env
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.development
       DB_HOST: db
+      RUN_MIGRATIONS: "true"
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/1
       CELERY_RESULT_BACKEND: redis://redis:6379/2
@@ -73,6 +76,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: docker-dev.txt
     container_name: seo_celery_worker
     restart: unless-stopped
     env_file: .env
@@ -96,6 +101,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: docker-dev.txt
     container_name: seo_celery_beat
     restart: unless-stopped
     env_file: .env
