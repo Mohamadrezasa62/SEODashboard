@@ -163,8 +163,6 @@
 # networks:
 #   app_network:
 #     driver: bridge
-version: '3.9'
-
 services:
   db:
     image: mysql:8.0
@@ -219,12 +217,17 @@ services:
       - app_network
 
   backend:
-    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: production.txt
     container_name: seo_backend_prod
     restart: always
     env_file: .env.prod
     environment:
       DJANGO_SETTINGS_MODULE: config.settings.production
+      RUN_MIGRATIONS: "true"
     volumes:
       - media_files:/app/media
       - static_files:/app/staticfiles
@@ -253,7 +256,11 @@ services:
       - app_network
 
   celery_worker:
-    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: production.txt
     container_name: seo_celery_prod
     restart: always
     env_file: .env.prod
@@ -279,7 +286,11 @@ services:
       - app_network
 
   celery_beat:
-    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: production.txt
     container_name: seo_celery_beat_prod
     restart: always
     env_file: .env.prod
@@ -298,7 +309,11 @@ services:
       - app_network
 
   celery_flower:
-    image: ghcr.io/${GITHUB_REPOSITORY}-backend:latest
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: production.txt
     container_name: seo_flower_prod
     restart: always
     env_file: .env.prod
@@ -314,13 +329,11 @@ services:
       - app_network
 
   frontend:
-    image: ghcr.io/${GITHUB_REPOSITORY}-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: seo_frontend_prod
     restart: always
-    environment:
-      NODE_ENV: production
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     networks:
       - app_network
 

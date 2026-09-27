@@ -36,6 +36,31 @@ copy .env.example .env
 docker compose up --build
 ```
 
+## استقرار روی Linux
+
+برای استقرار production روی Linux، ابتدا repository را روی سرور قرار دهید و فایل محیطی را خارج از Git بسازید:
+
+```bash
+cp .env.prod.example .env.prod
+chmod 600 .env.prod
+# همه placeholderها را در .env.prod با مقدار واقعی جایگزین کنید
+docker compose -f docker-compose.prod.yml --env-file .env.prod build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+```
+
+قبل از اجرای production، دامنه را در `nginx/conf.d/prod.conf` جایگزین کنید و certificateهای TLS را در volumeهای تعریف‌شده قرار دهید. سپس migration و seed را اجرا کنید:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py migrate --noinput
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py collectstatic --noinput
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py seed_permissions
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py seed_initial_data
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend python manage.py setup_periodic_tasks
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+```
+
+فایل `.env.prod` و certificateها نباید commit شوند. قبل از اعلام موفقیت deploy، health endpoint، ورود، ساخت پروژه، dashboard، logها و backup قابل restore را تست کنید.
+
 بعد از بالا آمدن سرویس‌ها، در یک ترمینال دیگر آماده‌سازی دیتابیس را انجام دهید:
 
 ```bash
